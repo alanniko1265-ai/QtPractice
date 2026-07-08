@@ -24,7 +24,10 @@
        </size>
       </property>
       <property name="title">
-       <string>Connection</string>
+       <string>TCP Connection</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignmentFlag::AlignCenter</set>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
@@ -89,7 +92,7 @@
           <set>Qt::AlignmentFlag::AlignCenter</set>
          </property>
          <property name="placeholderText">
-          <string>输入发送的内容</string>
+          <string>请输入TCP发送内容</string>
          </property>
         </widget>
        </item>
@@ -124,7 +127,7 @@
           </size>
          </property>
          <property name="text">
-          <string>Device Offline</string>
+          <string>TCP状态: 设备未连接</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -141,6 +144,9 @@
          </property>
          <property name="title">
           <string>Serial Port</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignCenter</set>
          </property>
          <widget class="QComboBox" name="comboBoxBaudRate">
           <property name="geometry">
@@ -164,6 +170,9 @@
             <height>192</height>
            </rect>
           </property>
+          <property name="placeholderText">
+           <string>串口接收数据</string>
+          </property>
          </widget>
          <widget class="QComboBox" name="comboBoxSerialPort">
           <property name="geometry">
@@ -183,6 +192,12 @@
             <width>221</width>
             <height>22</height>
            </rect>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+          <property name="placeholderText">
+           <string>请输入串口发送内容</string>
           </property>
          </widget>
          <widget class="QPushButton" name="btnCloseSerial">
@@ -290,6 +305,9 @@
          </property>
          <property name="readOnly">
           <bool>true</bool>
+         </property>
+         <property name="placeholderText">
+          <string>运行日志、通信收发和错误信息</string>
          </property>
         </widget>
        </item>

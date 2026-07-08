@@ -19,16 +19,17 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     logManager =new LogManager(ui->textEditLog);
+    appendLog("DeviceMonitorHost started");
     this->setStyleSheet(
         "QMainWindow { background-color: white; color: black; }"
         "QWidget { background-color: white; color: black; }"
         "QPushButton:disabled { color: gray; background-color: #eeeeee; }"
         );
-    setWindowTitle("Device Tool");
+    setWindowTitle("DeviceMonitorHost");
     resize(800,600);
-    ui->labelStatus->setText("设备未连接");
+    ui->labelStatus->setText("TCP状态：已连接");
     ui->labelStatus->setStyleSheet("color: red;");
-    statusBar()->showMessage("设备未连接");
+    statusBar()->showMessage("TCP已连接");
     ui->comboBoxBaudRate->addItem("9600");
     ui->comboBoxBaudRate->addItem("19200");
     ui->comboBoxBaudRate->addItem("38400");
@@ -50,6 +51,11 @@ MainWindow::~MainWindow()
 void MainWindow::on_btnConnect_clicked(){
     QString ip=ui->lineEditIp->text().trimmed();
     QString portText=ui->lineEditPort->text().trimmed();
+    QString devicename=ui->lineEditDeviceName->text().trimmed();
+    if(devicename.isEmpty()){
+        QMessageBox::warning(this,"提示","请输入设备名");
+        return;
+    }
     if(ip.isEmpty()||portText.isEmpty()){
         QMessageBox::warning(this,"提示","请输入IP和端口.");
         return;
@@ -63,7 +69,7 @@ void MainWindow::on_btnConnect_clicked(){
     socket->connectToHost(ip,port);
     logManager->tcp("正在连接到"+ip+":"+QString::number(port));
     statusBar()->showMessage("正在连接到......");
-    ui->labelStatus->setText("连接中");
+    ui->labelStatus->setText("TCP状态：连接中");
     ui->labelStatus->setStyleSheet("color: orange");
 }
 void MainWindow::on_btnDisconnect_clicked(){
@@ -73,9 +79,9 @@ void MainWindow::on_btnDisconnect_clicked(){
     }
     else{
         appendLog("现在没有已经建立的TCP连接");
-        ui->labelStatus->setText("设备未连接");
+        ui->labelStatus->setText("TCP状态：已连接");
         ui->labelStatus->setStyleSheet("color: red");
-        statusBar()->showMessage("设备未连接");
+        ui->labelStatus->setText("TCP状态：未连接");
     }
 }
 void MainWindow::on_btnClearLog_clicked(){
@@ -93,21 +99,21 @@ void MainWindow::initTcpSocket(){
     socket=new QTcpSocket(this);
     connect(socket,&QTcpSocket::connected,this,[this](){
         logManager->tcp("connected：TCP连接成功");
-        ui->labelStatus->setText("设备已连接");
+        ui->labelStatus->setText("TCP状态：已连接");
         ui->labelStatus->setStyleSheet("color:green;");
-        statusBar()->showMessage("设备已连接");
+        statusBar()->showMessage("TCP已连接");
         updateTcpUiState(true);
 
     });
     connect(socket,&QTcpSocket::disconnected,this,[this](){
-        if(ui->labelStatus->text()=="TCP连接错误"){
+        if(ui->labelStatus->text()=="TCP状态：连接错误"){
             logManager->tcp("disconnected：连接失败后 socket 已关闭");
         }
         else{
             logManager->tcp("disconnected：TCP连接已断开");
-            ui->labelStatus->setText("设备未连接");
+            ui->labelStatus->setText("TCP状态：未连接");
             ui->labelStatus->setStyleSheet("color:red");
-            statusBar()->showMessage("设备未连接");
+            ui->labelStatus->setText("TCP状态：未连接");
         }
         updateTcpUiState(false);
     });
@@ -118,9 +124,9 @@ void MainWindow::initTcpSocket(){
     } );
     connect(socket,&QTcpSocket::errorOccurred,this,[this](){
         logManager->error("TCP错误:"+socket->errorString());
-        ui->labelStatus->setText("TCP连接错误");
+        ui->labelStatus->setText("TCP状态：连接错误");
         ui->labelStatus->setStyleSheet("color:red");
-        statusBar()->showMessage("TCP连接错误");
+        ui->labelStatus->setText("TCP状态：连接错误");
         updateTcpUiState(false);
     }
 
@@ -152,7 +158,7 @@ void MainWindow::on_btnSendTcp_clicked(){
     }
     QString text=ui->lineEditTcpSend->text().trimmed();
     if(text.isEmpty()){
-        appendLog("TCP发送失败：发送内容为空");
+        logManager->error("TCP发送失败：发送内容为空");
         statusBar()->showMessage("TCP发送失败：当前未连接");
         return;
     }
@@ -221,7 +227,10 @@ void MainWindow::on_btnSaveLog_clicked(){
 void MainWindow:: on_btnAbout_triggered(){
     QMessageBox::about(
         this,
-        "关于",
-        "Qt Comm Tool v1\n\nTCP 调试工具\n支持连接、发送、接收、日志、参数保存。"
+        "关于 DeviceMonitorHost",
+        "DeviceMonitorHost\n\n"
+        "基于 Qt/C++ 的设备通信监控上位机。\n"
+        "当前版本支持 TCP 连接、数据发送接收、运行日志、日志保存、错误反馈和参数持久化。\n\n"
+        "Serial Port 模块作为后续扩展预留。"
         );
 }
