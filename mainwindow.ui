@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>783</width>
-    <height>670</height>
+    <height>689</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -294,7 +294,20 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="btnSaveLog">
+         <property name="text">
+          <string>保存日志</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="btnClearLog">
+         <property name="maximumSize">
+          <size>
+           <width>400</width>
+           <height>16777215</height>
+          </size>
+         </property>
          <property name="text">
           <string>清空日志</string>
          </property>
@@ -314,8 +327,20 @@
      <height>17</height>
     </rect>
    </property>
+   <widget class="QMenu" name="btnBang">
+    <property name="title">
+     <string>帮助</string>
+    </property>
+    <addaction name="btnAbout"/>
+   </widget>
+   <addaction name="btnBang"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="btnAbout">
+   <property name="text">
+    <string>关于</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

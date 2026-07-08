@@ -10,6 +10,9 @@
 #include "Qsettings"
 #include "worker.h"
 #include "logmanager.h"
+#include "QFileDialog"
+#include "QFile"
+#include "QTextStream"
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -76,7 +79,15 @@ void MainWindow::on_btnDisconnect_clicked(){
     }
 }
 void MainWindow::on_btnClearLog_clicked(){
-    logManager->clear();
+    int ret=QMessageBox::question(
+            this,
+            "确认",
+            "确认要清空日志吗?"
+        );
+    if(ret==QMessageBox::Yes){
+        logManager->clear();
+        statusBar()->showMessage("已经清空日志");
+    }
 }
 void MainWindow::initTcpSocket(){
     socket=new QTcpSocket(this);
@@ -186,4 +197,31 @@ void MainWindow::startWorkerTask(){
     connect(workerThread,&QThread::finished,workerThread,&QThread::deleteLater);
     workerThread->start();
 
+}
+void MainWindow::on_btnSaveLog_clicked(){
+    QString filename=QFileDialog::getSaveFileName(
+        this,
+        "保存日志",
+        "",
+        "Text Files (*,txt);;All Files (*,*)"
+    );
+    if(filename.isEmpty()){
+        return;
+    }
+    QFile file(filename);
+    if(!file.open(QIODevice::WriteOnly| QIODevice::Text)){
+        QMessageBox::warning(this,"错误","日志文件保存失败");
+        return;
+    }
+    QTextStream out(&file);
+    out<< ui->textEditLog->toPlainText();
+    file.close();
+    statusBar()->showMessage("日志已经保存");
+}
+void MainWindow:: on_btnAbout_triggered(){
+    QMessageBox::about(
+        this,
+        "关于",
+        "Qt Comm Tool v1\n\nTCP 调试工具\n支持连接、发送、接收、日志、参数保存。"
+        );
 }

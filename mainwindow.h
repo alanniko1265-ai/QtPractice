@@ -23,6 +23,8 @@ private slots:
     void on_btnDisconnect_clicked();
     void on_btnClearLog_clicked();
     void on_btnSendTcp_clicked();
+    void on_btnSaveLog_clicked();
+    void on_btnAbout_triggered();
 
 private:
     QTcpSocket *socket;
