@@ -9,11 +9,13 @@
 #include "QDateTime"
 #include "Qsettings"
 #include "worker.h"
+#include "logmanager.h"
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    logManager =new LogManager(ui->textEditLog);
     this->setStyleSheet(
         "QMainWindow { background-color: white; color: black; }"
         "QWidget { background-color: white; color: black; }"
@@ -74,7 +76,7 @@ void MainWindow::on_btnDisconnect_clicked(){
     }
 }
 void MainWindow::on_btnClearLog_clicked(){
-    ui->textEditLog->clear();
+    logManager->clear();
 }
 void MainWindow::initTcpSocket(){
     socket=new QTcpSocket(this);
@@ -115,8 +117,7 @@ void MainWindow::initTcpSocket(){
             );
 }
 void MainWindow::appendLog(const QString &message){
-    QString time=QDateTime::currentDateTime().toString("HH:mm:ss");
-    ui->textEditLog->append("["+time+"]"+message);
+    logManager->append(message);
 }
 void MainWindow::scanSerialPorts()
 {

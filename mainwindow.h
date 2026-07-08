@@ -10,7 +10,7 @@ namespace Ui {
 class MainWindow;
 }
 QT_END_NAMESPACE
-
+class LogManager;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -28,6 +28,7 @@ private:
     QTcpSocket *socket;
     QSerialPort *serialPort;
     QThread *workerThread=nullptr;
+    LogManager *logManager;;
 private:
     Ui::MainWindow *ui;
 private:
