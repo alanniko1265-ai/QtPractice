@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
     initTcpSocket();
     scanSerialPorts();
     loadSetting();
-    startWorkerTask();
+    //startWorkerTask();
     updateTcpUiState(false);
 }
 MainWindow::~MainWindow()
@@ -58,7 +58,7 @@ void MainWindow::on_btnConnect_clicked(){
         return;
     }
     socket->connectToHost(ip,port);
-    appendLog("正在连接到"+ip+":"+QString::number(port));
+    logManager->tcp("正在连接到"+ip+":"+QString::number(port));
     statusBar()->showMessage("正在连接到......");
     ui->labelStatus->setText("连接中");
     ui->labelStatus->setStyleSheet("color: orange");
@@ -81,7 +81,7 @@ void MainWindow::on_btnClearLog_clicked(){
 void MainWindow::initTcpSocket(){
     socket=new QTcpSocket(this);
     connect(socket,&QTcpSocket::connected,this,[this](){
-        appendLog("connected：TCP连接成功");
+        logManager->tcp("connected：TCP连接成功");
         ui->labelStatus->setText("设备已连接");
         ui->labelStatus->setStyleSheet("color:green;");
         statusBar()->showMessage("设备已连接");
@@ -90,10 +90,10 @@ void MainWindow::initTcpSocket(){
     });
     connect(socket,&QTcpSocket::disconnected,this,[this](){
         if(ui->labelStatus->text()=="TCP连接错误"){
-            appendLog("disconnected：连接失败后 socket 已关闭");
+            logManager->tcp("disconnected：连接失败后 socket 已关闭");
         }
         else{
-            appendLog("disconnected：TCP连接已断开");
+            logManager->tcp("disconnected：TCP连接已断开");
             ui->labelStatus->setText("设备未连接");
             ui->labelStatus->setStyleSheet("color:red");
             statusBar()->showMessage("设备未连接");
@@ -103,10 +103,10 @@ void MainWindow::initTcpSocket(){
     connect(socket,&QTcpSocket::readyRead,this,[this]{
         QByteArray date=socket->readAll();
         QString text=QString::fromUtf8(date);
-        appendLog("readyRead:收到数据:"+text);
+        logManager->recive("readyRead:收到数据:"+text);
     } );
     connect(socket,&QTcpSocket::errorOccurred,this,[this](){
-        appendLog("TCP错误:"+socket->errorString());
+        logManager->error("TCP错误:"+socket->errorString());
         ui->labelStatus->setText("TCP连接错误");
         ui->labelStatus->setStyleSheet("color:red");
         statusBar()->showMessage("TCP连接错误");
@@ -117,7 +117,7 @@ void MainWindow::initTcpSocket(){
             );
 }
 void MainWindow::appendLog(const QString &message){
-    logManager->append(message);
+    logManager->info(message);
 }
 void MainWindow::scanSerialPorts()
 {
@@ -135,7 +135,7 @@ void MainWindow::scanSerialPorts()
 }
 void MainWindow::on_btnSendTcp_clicked(){
     if(socket->state()!=QAbstractSocket::ConnectedState){
-        appendLog("TCP发送失败：当前未连接");
+        logManager->error("TCP发送失败：当前未连接");
         statusBar()->showMessage("TCP发送失败：当前未连接");
         return;
     }
@@ -147,7 +147,7 @@ void MainWindow::on_btnSendTcp_clicked(){
     }
     QByteArray date=text.toUtf8();
     qint64 bytes=socket->write(date);
-    appendLog("TCP发送数据："+text+",字节数,"+QString::number(bytes));
+    logManager->send("TCP发送数据："+text+",字节数,"+QString::number(bytes));
     statusBar()->showMessage("TCP发送成功");
     ui->lineEditTcpSend->clear();
 }
