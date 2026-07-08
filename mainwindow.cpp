@@ -19,7 +19,6 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     logManager =new LogManager(ui->textEditLog);
-    appendLog("DeviceMonitorHost started");
     this->setStyleSheet(
         "QMainWindow { background-color: white; color: black; }"
         "QWidget { background-color: white; color: black; }"
@@ -27,9 +26,9 @@ MainWindow::MainWindow(QWidget *parent)
         );
     setWindowTitle("DeviceMonitorHost");
     resize(800,600);
-    ui->labelStatus->setText("TCP状态：已连接");
+    ui->labelStatus->setText("TCP状态：未连接");
     ui->labelStatus->setStyleSheet("color: red;");
-    statusBar()->showMessage("TCP已连接");
+    statusBar()->showMessage("TCP未连接");
     ui->comboBoxBaudRate->addItem("9600");
     ui->comboBoxBaudRate->addItem("19200");
     ui->comboBoxBaudRate->addItem("38400");
@@ -38,9 +37,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->comboBoxBaudRate->setCurrentText("115200");
     ui->textEditSerialReceive->setReadOnly(true);
     initTcpSocket();
-    scanSerialPorts();
     loadSetting();
+    scanSerialPorts();
     //startWorkerTask();
+    appendLog("DeviceMonitorHost started");
     updateTcpUiState(false);
 }
 MainWindow::~MainWindow()
@@ -108,12 +108,13 @@ void MainWindow::initTcpSocket(){
     connect(socket,&QTcpSocket::disconnected,this,[this](){
         if(ui->labelStatus->text()=="TCP状态：连接错误"){
             logManager->tcp("disconnected：连接失败后 socket 已关闭");
+            statusBar()->showMessage("TCP连接失败，socket已关闭");
         }
         else{
             logManager->tcp("disconnected：TCP连接已断开");
-            ui->labelStatus->setText("TCP状态：未连接");
             ui->labelStatus->setStyleSheet("color:red");
             ui->labelStatus->setText("TCP状态：未连接");
+            statusBar()->showMessage("TCP已断开");
         }
         updateTcpUiState(false);
     });
@@ -121,6 +122,14 @@ void MainWindow::initTcpSocket(){
         QByteArray date=socket->readAll();
         QString text=QString::fromUtf8(date);
         logManager->recive("readyRead:收到数据:"+text);
+        if(text.contains("STATUS=OK")){
+            logManager->info("设备状态：正常");
+            statusBar()->showMessage("设备状态：正常");
+        }
+        else if(text.contains("ERROR")){
+            logManager->error("设备返回异常:"+text);
+            statusBar()->showMessage("设备返回异常");
+        }
     } );
     connect(socket,&QTcpSocket::errorOccurred,this,[this](){
         logManager->error("TCP错误:"+socket->errorString());
@@ -181,7 +190,7 @@ void MainWindow::loadSetting(){
     ui->lineEditIp->setText(ip);
     ui->lineEditPort->setText(port);
     ui->comboBoxBaudRate->setCurrentText(baudRate);
-    appendLog("已保存当前配置");
+    appendLog("已加载上次配置");
 }
 void MainWindow::saveSetting(){
     QSettings settings("anllenge","DeviceTool");
