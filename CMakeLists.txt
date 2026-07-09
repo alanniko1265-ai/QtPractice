@@ -17,6 +17,10 @@ qt_add_executable(qt_day06_connect_panel
     logmanager.cpp
     tcpclientmanager.h
     tcpclientmanager.cpp
+    settingsmanager.h
+    settingsmanager.cpp
+    serialportmanager.h
+    serialportmanager.cpp
 )
 
 target_link_libraries(qt_day06_connect_panel

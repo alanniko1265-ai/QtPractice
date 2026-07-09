@@ -14,13 +14,13 @@
 #include "QFile"
 #include "QTextStream"
 #include "tcpclientmanager.h"
+#include "settingsmanager.h"
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
     logManager =new LogManager(ui->textEditLog);
-    tcpManager =new TcpClientManager(this);
     this->setStyleSheet(
         "QMainWindow { background-color: white; color: black; }"
         "QWidget { background-color: white; color: black; }"
@@ -97,7 +97,6 @@ void MainWindow::on_btnDisconnect_clicked(){
     }
     else{
         logManager->info("当前没有已建立的TCP连接");
-        ui->labelStatus->setText("TCP状态：已连接");
         ui->labelStatus->setStyleSheet("color: red");
         ui->labelStatus->setText("TCP状态：未连接");
         updateTcpUiState(false);
@@ -202,20 +201,18 @@ void MainWindow::updateTcpUiState(bool connected){
     ui->btnSendTcp->setEnabled(connected);
 }
 void MainWindow::loadSetting(){
-    QSettings settings("anllenge","DeviceTool");
-    QString ip=settings.value("tcp/ip","127.0.0.1").toString();
-    QString port=settings.value("tcp/port","8888").toString();
-    QString baudRate=settings.value("serial/baudRate").toString();
-    ui->lineEditIp->setText(ip);
-    ui->lineEditPort->setText(port);
-    ui->comboBoxBaudRate->setCurrentText(baudRate);
+    AppSettings settings=SettingsManager::load();
+    ui->lineEditIp->setText(settings.tcpIp);
+    ui->lineEditPort->setText(settings.tcpPort);
+    ui->comboBoxBaudRate->setCurrentText(settings.serialBaudRate);
     appendLog("已加载上次配置");
 }
 void MainWindow::saveSetting(){
-    QSettings settings("anllenge","DeviceTool");
-    settings.setValue("tcp/ip",ui->lineEditIp->text().trimmed());
-    settings.setValue("tcp/port",ui->lineEditPort->text().trimmed());
-    settings.setValue("serial/baudRate",ui->comboBoxBaudRate->currentText());
+    AppSettings settings;
+    settings.tcpIp=ui->lineEditIp->text().trimmed();
+    settings.tcpPort=ui->lineEditPort->text().trimmed();
+    settings.serialBaudRate=ui->comboBoxBaudRate->currentText().trimmed();
+    SettingsManager::save(settings);
     appendLog("已保存当前配置");
 }
 void MainWindow::startWorkerTask(){
