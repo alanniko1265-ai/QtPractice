@@ -13,12 +13,14 @@
 #include "QFileDialog"
 #include "QFile"
 #include "QTextStream"
+#include "tcpclientmanager.h"
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
     logManager =new LogManager(ui->textEditLog);
+    tcpManager =new TcpClientManager(this);
     this->setStyleSheet(
         "QMainWindow { background-color: white; color: black; }"
         "QWidget { background-color: white; color: black; }"
@@ -56,32 +58,49 @@ void MainWindow::on_btnConnect_clicked(){
         QMessageBox::warning(this,"提示","请输入设备名");
         return;
     }
-    if(ip.isEmpty()||portText.isEmpty()){
-        QMessageBox::warning(this,"提示","请输入IP和端口.");
+    if(ip.isEmpty()){
+        QMessageBox::warning(this,"提示","请输入IP.");
+        logManager->error("连接失败: IP为空");
+        statusBar()->showMessage("连接失败: IP为空");
+        return;
+    }
+    if(portText.isEmpty()){
+        QMessageBox::warning(this,"提示","请输入端口");
+        logManager->error("连接失败：端口为空");
+        statusBar()->showMessage("连接失败：端口为空");
         return;
     }
     bool ok=false;
-    quint16 port=portText.toUShort(&ok);
+    int port=portText.toInt(&ok);
     if(!ok){
-        QMessageBox::warning(this,"提示","端口格式不正确.");
+        QMessageBox::warning(this,"提示","端口必须是数字.");
+        logManager->error("连接失败：端口不是数字");
+        statusBar()->showMessage("连接失败：端口不是数字");
         return;
     }
-    socket->connectToHost(ip,port);
+    if(port<1||port>65535){
+        QMessageBox::warning(this,"提示","端口范围必须是 1-65535");
+        logManager->error("连接失败：端口超出范围");
+        statusBar()->showMessage("连接失败：端口超出范围");
+        return;
+    }
+    tcpManager->connectToHost(ip,port);
     logManager->tcp("正在连接到"+ip+":"+QString::number(port));
     statusBar()->showMessage("正在连接到......");
     ui->labelStatus->setText("TCP状态：连接中");
     ui->labelStatus->setStyleSheet("color: orange");
 }
 void MainWindow::on_btnDisconnect_clicked(){
-    if(socket->state()==QAbstractSocket::ConnectedState){
-        appendLog("请求用户断开连接");
-        socket->disconnectFromHost();
+    if(tcpManager->isConnected()){
+        logManager->tcp("用户请求断开TCP连接");
+        tcpManager->disconnectFromHost();
     }
     else{
-        appendLog("现在没有已经建立的TCP连接");
+        logManager->info("当前没有已建立的TCP连接");
         ui->labelStatus->setText("TCP状态：已连接");
         ui->labelStatus->setStyleSheet("color: red");
         ui->labelStatus->setText("TCP状态：未连接");
+        updateTcpUiState(false);
     }
 }
 void MainWindow::on_btnClearLog_clicked(){
@@ -96,8 +115,8 @@ void MainWindow::on_btnClearLog_clicked(){
     }
 }
 void MainWindow::initTcpSocket(){
-    socket=new QTcpSocket(this);
-    connect(socket,&QTcpSocket::connected,this,[this](){
+    tcpManager=new TcpClientManager(this);
+    connect(tcpManager,&TcpClientManager::connected,this,[this](){
         logManager->tcp("connected：TCP连接成功");
         ui->labelStatus->setText("TCP状态：已连接");
         ui->labelStatus->setStyleSheet("color:green;");
@@ -105,7 +124,7 @@ void MainWindow::initTcpSocket(){
         updateTcpUiState(true);
 
     });
-    connect(socket,&QTcpSocket::disconnected,this,[this](){
+    connect(tcpManager,&TcpClientManager::disconnected,this,[this](){
         if(ui->labelStatus->text()=="TCP状态：连接错误"){
             logManager->tcp("disconnected：连接失败后 socket 已关闭");
             statusBar()->showMessage("TCP连接失败，socket已关闭");
@@ -118,9 +137,8 @@ void MainWindow::initTcpSocket(){
         }
         updateTcpUiState(false);
     });
-    connect(socket,&QTcpSocket::readyRead,this,[this]{
-        QByteArray date=socket->readAll();
-        QString text=QString::fromUtf8(date);
+    connect(tcpManager,&TcpClientManager::dateReceived,this,[this](const QString &text){
+
         logManager->recive("readyRead:收到数据:"+text);
         if(text.contains("STATUS=OK")){
             logManager->info("设备状态：正常");
@@ -131,16 +149,20 @@ void MainWindow::initTcpSocket(){
             statusBar()->showMessage("设备返回异常");
         }
     } );
-    connect(socket,&QTcpSocket::errorOccurred,this,[this](){
-        logManager->error("TCP错误:"+socket->errorString());
+    connect(tcpManager,&TcpClientManager::errorOccurred,this,[this](const QString &message){
+        logManager->error("TCP错误:"+message);
         ui->labelStatus->setText("TCP状态：连接错误");
         ui->labelStatus->setStyleSheet("color:red");
-        ui->labelStatus->setText("TCP状态：连接错误");
+        statusBar()->showMessage("TCP状态：连接错误 "+message);
         updateTcpUiState(false);
     }
 
 
             );
+    connect(tcpManager,&TcpClientManager::dateSent,this,[this](const QString &text,qint64 bytes){
+        logManager->send("TCP发送数据:"+text+",字节数:"+QString::number(bytes));
+        statusBar()->showMessage("发送成功");
+    });
 }
 void MainWindow::appendLog(const QString &message){
     logManager->info(message);
@@ -160,7 +182,7 @@ void MainWindow::scanSerialPorts()
 
 }
 void MainWindow::on_btnSendTcp_clicked(){
-    if(socket->state()!=QAbstractSocket::ConnectedState){
+    if(!tcpManager->isConnected()){
         logManager->error("TCP发送失败：当前未连接");
         statusBar()->showMessage("TCP发送失败：当前未连接");
         return;
@@ -168,13 +190,10 @@ void MainWindow::on_btnSendTcp_clicked(){
     QString text=ui->lineEditTcpSend->text().trimmed();
     if(text.isEmpty()){
         logManager->error("TCP发送失败：发送内容为空");
-        statusBar()->showMessage("TCP发送失败：当前未连接");
+        statusBar()->showMessage("TCP发送失败：发送内容为空");
         return;
     }
-    QByteArray date=text.toUtf8();
-    qint64 bytes=socket->write(date);
-    logManager->send("TCP发送数据："+text+",字节数,"+QString::number(bytes));
-    statusBar()->showMessage("TCP发送成功");
+    tcpManager->sendText(text);
     ui->lineEditTcpSend->clear();
 }
 void MainWindow::updateTcpUiState(bool connected){

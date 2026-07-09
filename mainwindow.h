@@ -1,6 +1,5 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
-#include<QTcpSocket>
 #include <QMainWindow>
 #include <QSerialPort>
 #include <QSerialPortInfo>
@@ -11,6 +10,7 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 class LogManager;
+class TcpClientManager;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -27,10 +27,10 @@ private slots:
     void on_btnAbout_triggered();
 
 private:
-    QTcpSocket *socket;
     QSerialPort *serialPort;
     QThread *workerThread=nullptr;
     LogManager *logManager;;
+    TcpClientManager *tcpManager;
 private:
     Ui::MainWindow *ui;
 private:

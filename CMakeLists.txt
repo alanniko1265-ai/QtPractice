@@ -15,6 +15,8 @@ qt_add_executable(qt_day06_connect_panel
     worker.cpp
     logmanager.h
     logmanager.cpp
+    tcpclientmanager.h
+    tcpclientmanager.cpp
 )
 
 target_link_libraries(qt_day06_connect_panel
