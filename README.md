@@ -6,7 +6,7 @@ Qt/C++ 学习项目实践。
 
 ```
 QtPractice/
-├── qt_day04_first_app/   # Qt 第一个应用：主窗口、UI 文件、CMake 构建
+├── qt_day04_first_app/        # Qt 第一个应用：主窗口、UI 文件、CMake 构建
 ```
 
 ## 学习进度
