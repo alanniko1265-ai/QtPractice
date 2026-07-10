@@ -259,3 +259,18 @@ void MainWindow:: on_btnAbout_triggered(){
         "Serial Port 模块作为后续扩展预留。"
         );
 }
+void MainWindow::on_btnOpenSerial_clicked(){
+
+}
+void MainWindow::on_btnCloseSerial_clicked(){
+
+}
+void MainWindow::on_btnSendSerial_clicked(){
+
+}
+void MainWindow::initSerialPort(){
+
+}
+void MainWindow::updateSerialUiState(bool opened){
+
+}

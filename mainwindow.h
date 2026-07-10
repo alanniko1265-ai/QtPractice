@@ -11,6 +11,7 @@ class MainWindow;
 QT_END_NAMESPACE
 class LogManager;
 class TcpClientManager;
+class SerialPortManager;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -25,12 +26,16 @@ private slots:
     void on_btnSendTcp_clicked();
     void on_btnSaveLog_clicked();
     void on_btnAbout_triggered();
+    void on_btnOpenSerial_clicked();
+    void on_btnCloseSerial_clicked();
+    void on_btnSendSerial_clicked();
 
 private:
     QSerialPort *serialPort;
     QThread *workerThread=nullptr;
     LogManager *logManager;;
     TcpClientManager *tcpManager;
+    SerialPortManager *serialPortManager;
 private:
     Ui::MainWindow *ui;
 private:
@@ -41,6 +46,8 @@ private:
     void loadSetting();
     void saveSetting();
     void startWorkerTask();
+    void initSerialPort();
+    void updateSerialUiState(bool opened);
 };
 
 #endif // MAINWINDOW_H
