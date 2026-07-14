@@ -15,6 +15,7 @@
 #include "QTextStream"
 #include "tcpclientmanager.h"
 #include "settingsmanager.h"
+#include "serialportmanager.h"
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -39,8 +40,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->comboBoxBaudRate->setCurrentText("115200");
     ui->textEditSerialReceive->setReadOnly(true);
     initTcpSocket();
+    initSerialPort();
     loadSetting();
     scanSerialPorts();
+    updateSerialUiState(false);
     //startWorkerTask();
     appendLog("DeviceMonitorHost started");
     updateTcpUiState(false);
@@ -168,10 +171,12 @@ void MainWindow::appendLog(const QString &message){
 }
 void MainWindow::scanSerialPorts()
 {
-    const QList<QSerialPortInfo> ports=QSerialPortInfo::availablePorts();
-    appendLog("开始扫描端口");
-    for(const QSerialPortInfo &info:ports){
-        appendLog("发现串口:1"+info.portName()+"-"+info.description());
+    ui->comboBoxSerialPort->clear();
+    const QStringList ports=serialPortManager->availablePorts();
+    appendLog("开始扫描串口");
+    for(const QString &portname:ports){
+        ui->comboBoxSerialPort->addItem(portname);
+        appendLog("发现串口:"+portname);
     }
     if(ports.isEmpty()){
         appendLog("未发现可用串口");
@@ -260,17 +265,64 @@ void MainWindow:: on_btnAbout_triggered(){
         );
 }
 void MainWindow::on_btnOpenSerial_clicked(){
-
+    QString portName =ui->comboBoxSerialPort->currentText().trimmed();
+    if(portName.isEmpty()){
+        QMessageBox::warning(this,"提示","请选择串口");
+        logManager->error("打开串口失败: 未选择串口");
+        return;
+    }
+    bool ok=false;
+    int baudRate=ui->comboBoxBaudRate->currentText().toInt(&ok);
+    if(!ok){
+        QMessageBox::warning(this, "提示", "波特率不是有效数字");
+        logManager->error("打开串口失败：波特率不是数字");
+        return;
+    }
+    serialPortManager->openPort(portName,baudRate);
 }
 void MainWindow::on_btnCloseSerial_clicked(){
-
+    serialPortManager->closePort();
 }
 void MainWindow::on_btnSendSerial_clicked(){
-
+    QString text=ui->lineEditSerialSend->text().trimmed();
+    if(text.isEmpty()){
+        logManager->error("串口发送失败：发送内容为空");
+        statusBar()->showMessage("串口发送失败:内容为空");
+        return;
+    }
+    serialPortManager->sendText(text);
+    ui->lineEditSerialSend->clear();
 }
 void MainWindow::initSerialPort(){
-
+    serialPortManager =new SerialPortManager(this);
+    connect(serialPortManager,&SerialPortManager::opened,this,[this](){
+        logManager->info("串口打开成功");
+        statusBar()->showMessage("串口已打开");
+        updateSerialUiState(true);
+    });
+    connect(serialPortManager,&SerialPortManager::closed,this,[this](){
+        logManager->info("串口已关闭");
+        statusBar()->showMessage("串口已关闭");
+        updateSerialUiState(false);
+    });
+    connect(serialPortManager,&SerialPortManager::dataReceived,this,[this](const QString &text){
+        logManager->recive("串口收到数据:"+text);
+        ui->textEditSerialReceive->moveCursor(QTextCursor::End);
+        ui->textEditSerialReceive->insertPlainText(text);
+    });
+    connect(serialPortManager,&SerialPortManager::dataSent,this,[this](const QString &text,qint64 bytes){
+        logManager->send("串口发送数据:"+text+"字节数"+QString::number(bytes));
+        statusBar()->showMessage("串口发送成功");
+    });
+    connect(serialPortManager,&SerialPortManager::errorOccurred,this,[this](const QString &message){
+        logManager->error("串口错误：" + message);
+        statusBar()->showMessage("串口错误：" + message);
+    });
 }
 void MainWindow::updateSerialUiState(bool opened){
-
+    ui->btnOpenSerial->setEnabled(!opened);
+    ui->btnCloseSerial->setEnabled(opened);
+    ui->btnSendSerial->setEnabled(opened);
+    ui->comboBoxSerialPort->setEnabled(!opened);
+    ui->comboBoxBaudRate->setEnabled(!opened);
 }
